@@ -79,7 +79,27 @@ client.on(Events.MessageCreate, async (message) => {
 
 // ディスコードに誰かが入ったら"{username}が入ったわよ〜!!"と発言する
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
-  // ユーザーが入ったのがボイスチャンネルかどうかを確認する
+  // ミュートでも反応してしまうので無視用
+  const statusChk =
+    oldState.serverDeaf === newState.serverDeaf &&
+    oldState.serverMute === newState.serverMute &&
+    oldState.selfDeaf === newState.selfDeaf &&
+    oldState.selfMute === newState.selfMute &&
+    oldState.selfVideo === newState.selfVideo &&
+    oldState.streaming === newState.streaming;
+
+  if ((statusChk == true || oldState.serverDeaf == null) && newState.channel) {
+    //チャンネルに入ってきたときの処理
+    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
+      `${newState.member?.displayName}が${newState.channel.name}チャンネルに入ったわよ〜!!`
+    );
+  } else if (statusChk && oldState.channel) {
+    // チャンネルから出たときの処理
+    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
+      `${newState.member?.displayName}が${oldState.channel?.name}チャンネルから抜けたわよ〜!!`
+    );
+  }
+});
 
 // 卒研の時間になると"みなさん卒研の時間ですわよ"と@everyoneのメンションをして発言をする
 type Lecture = {
