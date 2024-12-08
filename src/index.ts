@@ -29,7 +29,13 @@ try {
   console.error(error);
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 client.on(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}!`);
