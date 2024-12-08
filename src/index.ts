@@ -7,6 +7,7 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
+import schedule from "node-schedule";
 import { extractEnv } from "./extract-env";
 
 dotenv.config();
@@ -79,15 +80,68 @@ client.on(Events.MessageCreate, async (message) => {
 // ディスコードに誰かが入ったら"{username}が入ったわよ〜!!"と発言する
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   // ユーザーが入ったのがボイスチャンネルかどうかを確認する
-  if (newState.channel?.isVoiceBased) {
+
+// 卒研の時間になると"みなさん卒研の時間ですわよ"と@everyoneのメンションをして発言をする
+type Lecture = {
+  name: string;
+  startTime: schedule.Spec;
+  endTime: schedule.Spec;
+};
+
+const GraduationResearchScheduleList: Lecture[] = [
+  {
+    name: "月曜2限",
+    startTime: { hour: 10, minute: 30, dayOfWeek: 1 },
+    endTime: { hour: 12, minute: 0, dayOfWeek: 1 },
+  },
+  {
+    name: "月曜3限",
+    startTime: { hour: 12, minute: 50, dayOfWeek: 1 },
+    endTime: { hour: 14, minute: 20, dayOfWeek: 1 },
+  },
+  {
+    name: "火曜3限",
+    startTime: { hour: 12, minute: 50, dayOfWeek: 2 },
+    endTime: { hour: 14, minute: 20, dayOfWeek: 2 },
+  },
+  {
+    name: "火曜4限",
+    startTime: { hour: 14, minute: 30, dayOfWeek: 2 },
+    endTime: { hour: 16, minute: 0, dayOfWeek: 2 },
+  },
+  {
+    name: "水曜4限",
+    startTime: { hour: 14, minute: 30, dayOfWeek: 3 },
+    endTime: { hour: 16, minute: 0, dayOfWeek: 3 },
+  },
+  {
+    name: "木曜4限",
+    startTime: { hour: 14, minute: 30, dayOfWeek: 4 },
+    endTime: { hour: 16, minute: 0, dayOfWeek: 4 },
+  },
+  {
+    name: "金曜3限",
+    startTime: { hour: 12, minute: 50, dayOfWeek: 5 },
+    endTime: { hour: 14, minute: 20, dayOfWeek: 5 },
+  },
+  {
+    name: "金曜4限",
+    startTime: { hour: 14, minute: 30, dayOfWeek: 6 },
+    endTime: { hour: 16, minute: 0, dayOfWeek: 6 },
+  },
+];
+
+GraduationResearchScheduleList.map((lecture) => {
+  schedule.scheduleJob(lecture.name + "開始", lecture.startTime, () => {
     (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      `${newState.member?.displayName}が${newState.channel.name}に入ったわよ〜!!`
+      `@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`
     );
-  } else {
+  });
+  schedule.scheduleJob(lecture.name + "終了", lecture.endTime, () => {
     (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      `${newState.member?.displayName}が${oldState.channel?.name}から抜けたわよ〜!!`
+      "@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！"
     );
-  }
+  });
 });
 
 client.login(DISCORD_BOT_TOKEN);
