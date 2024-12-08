@@ -1,11 +1,19 @@
-import { REST, Routes, Client, GatewayIntentBits, Events } from "discord.js";
+import {
+  REST,
+  Routes,
+  Client,
+  GatewayIntentBits,
+  Events,
+  TextChannel,
+} from "discord.js";
 import dotenv from "dotenv";
 import { extractEnv } from "./extract-env";
 
 dotenv.config();
-const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID } = extractEnv([
+const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID } = extractEnv([
   "DISCORD_BOT_TOKEN",
   "DISCORD_CLIENT_ID",
+  "CHAT_CHANNEL_ID",
 ]);
 
 const commands = [
@@ -34,6 +42,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -64,6 +73,20 @@ client.on(Events.MessageCreate, async (message) => {
     message.channel.send("おほ^〜");
   } else {
     message.channel.send("はえ^〜");
+  }
+});
+
+// ディスコードに誰かが入ったら"{username}が入ったわよ〜!!"と発言する
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  // ユーザーが入ったのがボイスチャンネルかどうかを確認する
+  if (newState.channel?.isVoiceBased) {
+    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
+      `${newState.member?.displayName}が${newState.channel.name}に入ったわよ〜!!`
+    );
+  } else {
+    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
+      `${newState.member?.displayName}が${oldState.channel?.name}から抜けたわよ〜!!`
+    );
   }
 });
 
