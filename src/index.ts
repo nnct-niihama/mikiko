@@ -1,4 +1,4 @@
-import { REST, Routes, Client, GatewayIntentBits } from "discord.js";
+import { REST, Routes, Client, GatewayIntentBits, Events } from "discord.js";
 import dotenv from "dotenv";
 import { extractEnv } from "./extract-env";
 
@@ -31,11 +31,11 @@ try {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.on("ready", () => {
+client.on(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}!`);
 });
 
-client.on("interactionCreate", async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "ping") {
