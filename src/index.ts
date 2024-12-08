@@ -49,4 +49,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+// 発言に対して3%の確率でおほ^〜やはえ^〜などを返信を返す（時間帯によって発言確率を変更しても楽しいかも）
+client.on(Events.MessageCreate, async (message) => {
+  // Botかどうかを判定する
+  if (message.author.bot) {
+    return;
+  }
+
+  // 3%の確率で `おほ^〜` か `はえ^〜` を発言する
+  if (Math.random() >= 0.03) {
+    return;
+  }
+  if (Math.random() < 0.7) {
+    message.channel.send("おほ^〜");
+  } else {
+    message.channel.send("はえ^〜");
+  }
+});
+
 client.login(DISCORD_BOT_TOKEN);
