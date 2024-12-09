@@ -44,6 +44,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessageReactions,
   ],
 });
 
@@ -151,16 +152,46 @@ const GraduationResearchScheduleList: Lecture[] = [
   },
 ];
 
+// 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
 GraduationResearchScheduleList.map((lecture) => {
-  schedule.scheduleJob(lecture.name + "開始", lecture.startTime, () => {
-    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      `@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`
-    );
+  schedule.scheduleJob(lecture.name + "開始", lecture.startTime, async () => {
+    try {
+      const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+      const message = await channel.send(
+        `@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`
+      );
+
+      const collector = message.createReactionCollector({
+        filter: (reaction, user) => reaction.emoji.name === "🖕" && !user.bot,
+        time: 600_000,
+      });
+
+      collector.on("collect", (reaction, user) => {
+        channel.send(`${user.displayName} >> You punk! 🖕`);
+      });
+    } catch (error) {
+      console.error("メッセージ送信エラー:", error);
+    }
   });
-  schedule.scheduleJob(lecture.name + "終了", lecture.endTime, () => {
-    (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      "@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！"
-    );
+
+  schedule.scheduleJob(lecture.name + "終了", lecture.endTime, async () => {
+    try {
+      const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+      const message = await channel.send(
+        `@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！`
+      );
+
+      const collector = message.createReactionCollector({
+        filter: (reaction, user) => reaction.emoji.name === "🖕" && !user.bot,
+        time: 600_000,
+      });
+
+      collector.on("collect", (reaction, user) => {
+        channel.send(`${user.displayName} >> You punk! 🖕`);
+      });
+    } catch (error) {
+      console.error("メッセージ送信エラー:", error);
+    }
   });
 });
 
