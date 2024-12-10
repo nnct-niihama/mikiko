@@ -1,11 +1,4 @@
-import {
-  REST,
-  Routes,
-  Client,
-  GatewayIntentBits,
-  Events,
-  TextChannel,
-} from "discord.js";
+import { Client, GatewayIntentBits, Events, TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import schedule from "node-schedule";
 import { extractEnv } from "./extract-env";
@@ -18,6 +11,7 @@ import {
 import fs from "fs";
 import path from "path";
 import { Octokit } from "@octokit/core";
+import express, { type Request, type Response } from "express";
 
 await configure({
   sinks: {
@@ -49,6 +43,66 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessageReactions,
   ],
+});
+
+const app = express();
+app.use(express.json());
+
+// GitHub Webhook 受信時の型
+interface GitHubWebhookPayload {
+  action: string;
+  issue: {
+    title: string;
+  };
+}
+
+// 型ガード関数
+const isGitHubWebhookPayload = (
+  value: unknown
+): value is GitHubWebhookPayload => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  if (
+    "action" in value &&
+    typeof value.action === "string" &&
+    value.action != undefined &&
+    "issue" in value &&
+    typeof value.issue === "object" &&
+    value.issue != undefined
+  ) {
+    if ("title" in value.issue && typeof value.issue.title === "string") {
+      return true;
+    }
+  }
+  return false;
+};
+
+// GitHub Webhook 受信処理
+app.post("/webhook", async (req, res) => {
+  try {
+    logger.info("Webhook");
+    const reqBody = req.body as unknown;
+
+    // 型チェック
+    if (!isGitHubWebhookPayload(reqBody)) {
+      throw new Error(
+        "The webhook request type is different from the expected type"
+      );
+    }
+
+    // actionがクローズ以外のものだった場合処理を終了
+    if (reqBody.action !== "closed") {
+      return;
+    }
+
+    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+    channel.send(
+      `>>> # 新しい機能が実装されたわよ〜❤️\n${reqBody.issue.title}\n美樹子感激✨`
+    );
+  } catch (error) {
+    logger.error(`Webhook -> error: ${error}`);
+  }
 });
 
 client.on(Events.ClientReady, () => {
@@ -322,6 +376,11 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
       error: error,
     });
   }
+});
+
+// サーバー起動
+app.listen(3000, () => {
+  logger.info("Server is listening on port 3000");
 });
 
 client.login(DISCORD_BOT_TOKEN);
