@@ -9,18 +9,26 @@ import {
 import dotenv from "dotenv";
 import schedule from "node-schedule";
 import { extractEnv } from "./extract-env";
-import { configure, getFileSink, getLogger } from "@logtape/logtape";
+import {
+  configure,
+  getConsoleSink,
+  getFileSink,
+  getLogger,
+} from "@logtape/logtape";
 import { Octokit } from "@octokit/core";
 
 await configure({
   sinks: {
     file: getFileSink("mikiko.log"),
+    console: getConsoleSink(),
   },
   filters: {},
-  loggers: [{ category: ["my-app"], lowestLevel: "info", sinks: ["file"] }],
+  loggers: [
+    { category: ["app"], lowestLevel: "info", sinks: ["file", "console"] },
+  ],
 });
 
-const logger = getLogger(["my-app"]);
+const logger = getLogger(["app"]);
 
 dotenv.config();
 const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID, GITHUB_TOKEN } =
@@ -63,7 +71,7 @@ const client = new Client({
 });
 
 client.on(Events.ClientReady, () => {
-  console.log(`Logged in as ${client.user?.tag}!`);
+  console.log(`Logged in as ${client.user?.tag}!\n\n\n`);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
