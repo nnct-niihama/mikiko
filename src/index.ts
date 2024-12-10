@@ -11,7 +11,7 @@ import {
 import fs from "fs";
 import path from "path";
 import { Octokit } from "@octokit/core";
-import express, { type Request, type Response } from "express";
+import express from "express";
 
 await configure({
   sinks: {
@@ -79,7 +79,8 @@ const isGitHubWebhookPayload = (
       "url" in value.issue &&
       typeof value.issue.url === "string" &&
       "assignee" in value.issue &&
-      typeof value.issue.assignee == "string"
+      (typeof value.issue.assignee == "string" ||
+        typeof value.issue.assignee == "undefined")
     ) {
       return true;
     }
@@ -106,9 +107,11 @@ app.post("/webhook", async (req, res) => {
     }
 
     const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-    channel.send(
-      `>>> # 新しい機能が実装されたわよ〜❤️\n[${reqBody.issue.title}](${reqBody.issue.url})\n美樹子感激✨-# created by ${reqBody.issue.assignee}`
-    );
+    let message = `>>> # 新しい機能が実装されたわよ〜❤️\n[${reqBody.issue.title}](${reqBody.issue.url})\n美樹子感激✨`;
+    if (reqBody.issue.assignee != undefined) {
+      message = message + `\n-# created by ${reqBody.issue.assignee}`;
+    }
+    channel.send(message);
   } catch (error) {
     logger.error(`Webhook -> error: ${error}`);
   }
