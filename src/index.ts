@@ -62,38 +62,35 @@ interface GitHubWebhookPayload {
   };
 }
 
-// 型ガード関数
+// GitHub Webhook ペイロードの型ガード関数
 const isGitHubWebhookPayload = (
   value: unknown
 ): value is GitHubWebhookPayload => {
+  // 値がオブジェクトなのか？
   if (!value || typeof value !== "object") {
     return false;
   }
-  if (
+
+  // 必要なプロパティが存在し、かつ、正しい型なのか？
+  return (
     "action" in value &&
     typeof value.action === "string" &&
-    value.action != undefined &&
     "issue" in value &&
     typeof value.issue === "object" &&
-    value.issue != undefined
-  ) {
-    if (
-      "title" in value.issue &&
-      typeof value.issue.title === "string" &&
-      "url" in value.issue &&
-      typeof value.issue.url === "string" &&
-      "assignees" in value.issue &&
-      Array.isArray(value.issue.assignees)
-    ) {
-      if (
-        "login" in value.issue.assignees &&
-        typeof value.issue.assignees.login === "string"
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+    value.issue != undefined &&
+    "title" in value.issue &&
+    typeof value.issue.title === "string" &&
+    "url" in value.issue &&
+    typeof value.issue.url === "string" &&
+    "assignees" in value.issue &&
+    Array.isArray(value.issue.assignees) &&
+    value.issue.assignees.every(
+      (assignee) =>
+        typeof assignee === "object" &&
+        "login" in assignee &&
+        typeof assignee.login === "string"
+    )
+  );
 };
 
 // GitHub Webhook 受信処理
