@@ -307,7 +307,10 @@ schedule.scheduleJob({ hour: 0, minute: 0 }, async () => {
     let messageText =
       ">>> # おほほ〜、まだ実装されていない機能があるわよ〜❤️\n";
     response.data
-      .filter((issue) => !issue.labels.includes("maintenance"))
+      .filter(
+        (issue) =>
+          !issue.labels.map((label) => label.toString()).includes("maintenance")
+      )
       .map((issue) => {
         messageText = messageText + `- ${issue.title}\n`;
       });
@@ -339,9 +342,14 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
     const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
     let messageText =
       ">>> # おほほ〜、まだ実装されていない機能があるわよ〜❤️\n";
-    response.data.map((issue) => {
-      messageText = messageText + `- ${issue.title}\n`;
-    });
+    response.data
+      .filter(
+        (issue) =>
+          !issue.labels.map((label) => label.toString()).includes("maintenance")
+      )
+      .map((issue) => {
+        messageText = messageText + `- ${issue.title}\n`;
+      });
     messageText = messageText + "早く実装して〜❤️";
 
     channel.send(messageText);
