@@ -54,7 +54,11 @@ interface GitHubWebhookPayload {
   issue: {
     title: string;
     url: string;
-    assignee: string;
+    assignees: [
+      {
+        login: string;
+      }
+    ];
   };
 }
 
@@ -78,11 +82,15 @@ const isGitHubWebhookPayload = (
       typeof value.issue.title === "string" &&
       "url" in value.issue &&
       typeof value.issue.url === "string" &&
-      "assignee" in value.issue &&
-      (typeof value.issue.assignee == "string" ||
-        typeof value.issue.assignee == "undefined")
+      "assignees" in value.issue &&
+      Array.isArray(value.issue.assignees)
     ) {
-      return true;
+      if (
+        "login" in value.issue.assignees &&
+        typeof value.issue.assignees.login === "string"
+      ) {
+        return true;
+      }
     }
   }
   return false;
@@ -108,8 +116,11 @@ app.post("/webhook", async (req, res) => {
 
     const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
     let message = `>>> # 新しい機能が実装されたわよ〜❤️\n[${reqBody.issue.title}](${reqBody.issue.url})\n美樹子感激✨`;
-    if (reqBody.issue.assignee != undefined) {
-      message = message + `\n-# created by ${reqBody.issue.assignee}`;
+    if (reqBody != undefined && reqBody.issue.assignees.length > 0) {
+      const devMember = reqBody.issue.assignees
+        .map((user) => user.login)
+        .join(", ");
+      message = message + `\n-# created by ${devMember}`;
     }
     channel.send(message);
   } catch (error) {
