@@ -191,45 +191,12 @@ const GraduationResearchScheduleList: Lecture[] = [
   },
 ];
 
-// 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
 GraduationResearchScheduleList.map((lecture) => {
   schedule.scheduleJob(lecture.name + "開始", lecture.startTime, async () => {
     try {
       logger.info("Scheduled Event");
       const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-      const message = await channel.send(
-        `@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`
-      );
-
-      const collector = message.createReactionCollector({
-        filter: (reaction, user) => reaction.emoji.name === "🖕" && !user.bot,
-        time: 600_000,
-      });
-
-      collector.on("collect", (reaction, user) => {
-        const files = fs.readdirSync("./assets");
-        const fileCount = files.filter((file) => {
-          const filePath = path.join("./assets", file);
-          return !file.startsWith(".") && fs.statSync(filePath).isFile;
-        }).length;
-
-        // 何番目の画像を使うのか計算
-        const fileNumber = Math.floor(Math.random() * fileCount);
-        channel.send({
-          content: `<@${user.id}> >> You punk! 🖕`,
-          files: [
-            {
-              attachment: path.join(
-                "./assets",
-                files.filter((file) => {
-                  const filePath = path.join("./assets", file);
-                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
-                })[fileNumber]
-              ),
-            },
-          ],
-        });
-      });
+      await channel.send(`@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`);
     } catch (error) {
       logger.error("Scheduled Event -> error: {error}", {
         error: error,
@@ -242,43 +209,9 @@ GraduationResearchScheduleList.map((lecture) => {
     try {
       logger.info("Scheduled Event");
       const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-      const message = await channel.send(
+      await channel.send(
         `@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！`
       );
-
-      const collector = message.createReactionCollector({
-        filter: (reaction, user) =>
-          (reaction.emoji.name === "🖕" ||
-            reaction.emoji.name === "👎" ||
-            reaction.emoji.name === "💩") &&
-          !user.bot,
-        time: 600_000,
-      });
-
-      collector.on("collect", (reaction, user) => {
-        const files = fs.readdirSync("./assets");
-        const fileCount = files.filter((file) => {
-          const filePath = path.join("./assets", file);
-          return !file.startsWith(".") && fs.statSync(filePath).isFile;
-        }).length;
-
-        // 何番目の画像を使うのか計算
-        const fileNumber = Math.floor(Math.random() * fileCount);
-        channel.send({
-          content: `<@${user.id}> >> You punk! 🖕`,
-          files: [
-            {
-              attachment: path.join(
-                "./assets",
-                files.filter((file) => {
-                  const filePath = path.join("./assets", file);
-                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
-                })[fileNumber]
-              ),
-            },
-          ],
-        });
-      });
     } catch (error) {
       logger.error("Scheduled Event -> error: {error}", {
         error: error,
@@ -357,6 +290,71 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
     logger.error("Scheduled Event -> error: {error}", {
       error: error,
     });
+  }
+});
+
+// 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
+const messageReactions = new Map();
+client.on(Events.MessageReactionAdd, (reaction, user) => {
+  try {
+    // リアクションをつけたのがBotの場合は無視する
+    if (user.bot) {
+      return;
+    }
+
+    // Botに対してのリアクションかどうか判定しBotじゃない場合は無視する
+    if (reaction.message.author?.id === DISCORD_CLIENT_ID) {
+      return;
+    }
+
+    // 舐めた文字(🖕, 👎, 💩)の場合
+    if (
+      reaction.emoji.name === "🖕" ||
+      reaction.emoji.name === "👎" ||
+      reaction.emoji.name === "💩"
+    ) {
+      const message = reaction.message;
+      const messageId = message.id;
+
+      // そのメッセージでまだリアクションしていない場合
+      if (!messageReactions.has(messageId)) {
+        messageReactions.set(messageId, new Set());
+      }
+
+      const reactionUsers = messageReactions.get(messageId);
+
+      // そのメッセージで、そのユーザーがまだリアクションしていない場合のみ
+      if (!reactionUsers.has(user.id)) {
+        const files = fs.readdirSync("./assets");
+        const fileCount = files.filter((file) => {
+          const filePath = path.join("./assets", file);
+          return !file.startsWith(".") && fs.statSync(filePath).isFile;
+        }).length;
+
+        // 何番目の画像を使うのか計算
+        const fileNumber = Math.floor(Math.random() * fileCount);
+        message.reply({
+          content: `<@${user.id}> >> You punk! 🖕`,
+          files: [
+            {
+              attachment: path.join(
+                "./assets",
+                files.filter((file) => {
+                  const filePath = path.join("./assets", file);
+                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
+                })[fileNumber]
+              ),
+            },
+          ],
+        });
+
+        // リアクション済みユーザーを記録
+        reactionUsers.add(user.id);
+      }
+    }
+    logger.info(`MessageReactionAdd -> userId: ${user.id}`);
+  } catch (error) {
+    logger.error(`MessageReactionAdd -> error: ${error}`);
   }
 });
 
