@@ -41,27 +41,6 @@ const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID, GITHUB_TOKEN } =
     "GITHUB_TOKEN",
   ]);
 
-const commands = [
-  {
-    name: "ping",
-    description: "Replies with Pong!",
-  },
-];
-
-const rest = new REST({ version: "10" }).setToken(DISCORD_BOT_TOKEN);
-
-try {
-  console.log("Started refreshing application (/) commands.");
-
-  await rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID), {
-    body: commands,
-  });
-
-  console.log("Successfully reloaded application (/) commands.");
-} catch (error) {
-  console.error(error);
-}
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -76,20 +55,72 @@ client.on(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user?.tag}!\n\n\n`);
 });
 
-client.on(Events.InteractionCreate, async (interaction) => {
+// 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
+const messageReactions = new Map();
+const botReplies = new Set();
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
   try {
-    logger.info("InteractionCreate -> userId: {userId}", {
-      userId: interaction.user.id,
-    });
-    if (!interaction.isChatInputCommand()) return;
+    logger.info(`MessageReactionAdd -> userId: ${user.id}`);
 
-    if (interaction.commandName === "ping") {
-      await interaction.reply("Pong!");
+    // リアクションをつけたのがBotの場合は無視する
+    if (user.bot) {
+      return;
+    }
+
+    // Botに対してのリアクションかどうか判定しBotじゃない場合は無視する
+    if (reaction.message.author?.id !== DISCORD_CLIENT_ID) {
+      return;
+    }
+
+    // 舐めた文字(🖕, 👎, 💩)の場合
+    if (
+      reaction.emoji.name === "🖕" ||
+      reaction.emoji.name === "👎" ||
+      reaction.emoji.name === "💩"
+    ) {
+      const message = reaction.message;
+      const messageId = message.id;
+
+      // そのメッセージでまだリアクションしていない場合
+      if (!messageReactions.has(messageId)) {
+        messageReactions.set(messageId, new Set());
+      }
+
+      const reactionUsers = messageReactions.get(messageId);
+
+      // そのメッセージで、そのユーザーがまだリアクションしていない場合、またそのメッセージがbotがこの機能（🖕に対して反応する機能）で送ったものじゃない場合のみ
+      if (!reactionUsers.has(user.id) && !botReplies.has(reaction.message.id)) {
+        const files = fs.readdirSync("./assets");
+        const fileCount = files.filter((file) => {
+          const filePath = path.join("./assets", file);
+          return !file.startsWith(".") && fs.statSync(filePath).isFile;
+        }).length;
+
+        // 何番目の画像を使うのか計算
+        const fileNumber = Math.floor(Math.random() * fileCount);
+        const replyMessage = await message.reply({
+          content: `<@${user.id}> >> You punk! 🖕`,
+          files: [
+            {
+              attachment: path.join(
+                "./assets",
+                files.filter((file) => {
+                  const filePath = path.join("./assets", file);
+                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
+                })[fileNumber]
+              ),
+            },
+          ],
+        });
+
+        // リアクション済みユーザーを記録
+        reactionUsers.add(user.id);
+        // botのリプライメッセージに記録
+        botReplies.add(replyMessage.id);
+      }
     }
   } catch (error) {
-    logger.error("InteractionCreate -> error: {error}", {
-      error: error,
-    });
+    logger.error(`MessageReactionAdd -> error: ${error}`);
   }
 });
 
@@ -290,71 +321,6 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
     logger.error("Scheduled Event -> error: {error}", {
       error: error,
     });
-  }
-});
-
-// 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
-const messageReactions = new Map();
-client.on(Events.MessageReactionAdd, (reaction, user) => {
-  try {
-    // リアクションをつけたのがBotの場合は無視する
-    if (user.bot) {
-      return;
-    }
-
-    // Botに対してのリアクションかどうか判定しBotじゃない場合は無視する
-    if (reaction.message.author?.id === DISCORD_CLIENT_ID) {
-      return;
-    }
-
-    // 舐めた文字(🖕, 👎, 💩)の場合
-    if (
-      reaction.emoji.name === "🖕" ||
-      reaction.emoji.name === "👎" ||
-      reaction.emoji.name === "💩"
-    ) {
-      const message = reaction.message;
-      const messageId = message.id;
-
-      // そのメッセージでまだリアクションしていない場合
-      if (!messageReactions.has(messageId)) {
-        messageReactions.set(messageId, new Set());
-      }
-
-      const reactionUsers = messageReactions.get(messageId);
-
-      // そのメッセージで、そのユーザーがまだリアクションしていない場合のみ
-      if (!reactionUsers.has(user.id)) {
-        const files = fs.readdirSync("./assets");
-        const fileCount = files.filter((file) => {
-          const filePath = path.join("./assets", file);
-          return !file.startsWith(".") && fs.statSync(filePath).isFile;
-        }).length;
-
-        // 何番目の画像を使うのか計算
-        const fileNumber = Math.floor(Math.random() * fileCount);
-        message.reply({
-          content: `<@${user.id}> >> You punk! 🖕`,
-          files: [
-            {
-              attachment: path.join(
-                "./assets",
-                files.filter((file) => {
-                  const filePath = path.join("./assets", file);
-                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
-                })[fileNumber]
-              ),
-            },
-          ],
-        });
-
-        // リアクション済みユーザーを記録
-        reactionUsers.add(user.id);
-      }
-    }
-    logger.info(`MessageReactionAdd -> userId: ${user.id}`);
-  } catch (error) {
-    logger.error(`MessageReactionAdd -> error: ${error}`);
   }
 });
 
