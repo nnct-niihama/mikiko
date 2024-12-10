@@ -53,6 +53,8 @@ interface GitHubWebhookPayload {
   action: string;
   issue: {
     title: string;
+    url: string;
+    assignee: string;
   };
 }
 
@@ -71,7 +73,14 @@ const isGitHubWebhookPayload = (
     typeof value.issue === "object" &&
     value.issue != undefined
   ) {
-    if ("title" in value.issue && typeof value.issue.title === "string") {
+    if (
+      "title" in value.issue &&
+      typeof value.issue.title === "string" &&
+      "url" in value.issue &&
+      typeof value.issue.url === "string" &&
+      "assignee" in value.issue &&
+      typeof value.issue.assignee == "string"
+    ) {
       return true;
     }
   }
@@ -98,7 +107,7 @@ app.post("/webhook", async (req, res) => {
 
     const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
     channel.send(
-      `>>> # 新しい機能が実装されたわよ〜❤️\n${reqBody.issue.title}\n美樹子感激✨`
+      `>>> # 新しい機能が実装されたわよ〜❤️\n[${reqBody.issue.title}](${reqBody.issue.url})\n美樹子感激✨-# created by ${reqBody.issue.assignee}`
     );
   } catch (error) {
     logger.error(`Webhook -> error: ${error}`);
