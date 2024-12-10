@@ -15,6 +15,8 @@ import {
   getFileSink,
   getLogger,
 } from "@logtape/logtape";
+import fs from "fs";
+import path from "path";
 import { Octokit } from "@octokit/core";
 
 await configure({
@@ -205,9 +207,27 @@ GraduationResearchScheduleList.map((lecture) => {
       });
 
       collector.on("collect", (reaction, user) => {
+        const files = fs.readdirSync("./assets");
+        const fileCount = files.filter((file) => {
+          const filePath = path.join("./assets", file);
+          return !file.startsWith(".") && fs.statSync(filePath).isFile;
+        }).length;
+
+        // 何番目の画像を使うのか計算
+        const fileNumber = Math.floor(Math.random() * fileCount);
         channel.send({
-          content: `@${user.displayName} >> You punk! 🖕`,
-          files: [{ attachment: "./assets/mikiko.jpg" }],
+          content: `<@${user.id}> >> You punk! 🖕`,
+          files: [
+            {
+              attachment: path.join(
+                "./assets",
+                files.filter((file) => {
+                  const filePath = path.join("./assets", file);
+                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
+                })[fileNumber]
+              ),
+            },
+          ],
         });
       });
     } catch (error) {
@@ -236,9 +256,27 @@ GraduationResearchScheduleList.map((lecture) => {
       });
 
       collector.on("collect", (reaction, user) => {
+        const files = fs.readdirSync("./assets");
+        const fileCount = files.filter((file) => {
+          const filePath = path.join("./assets", file);
+          return !file.startsWith(".") && fs.statSync(filePath).isFile;
+        }).length;
+
+        // 何番目の画像を使うのか計算
+        const fileNumber = Math.floor(Math.random() * fileCount);
         channel.send({
-          content: `@${user.displayName} >> You punk! 🖕`,
-          files: [{ attachment: "./assets/mikiko.jpg" }],
+          content: `<@${user.id}> >> You punk! 🖕`,
+          files: [
+            {
+              attachment: path.join(
+                "./assets",
+                files.filter((file) => {
+                  const filePath = path.join("./assets", file);
+                  return !file.startsWith(".") && fs.statSync(filePath).isFile;
+                })[fileNumber]
+              ),
+            },
+          ],
         });
       });
     } catch (error) {
