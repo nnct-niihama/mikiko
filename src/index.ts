@@ -205,7 +205,10 @@ GraduationResearchScheduleList.map((lecture) => {
       });
 
       collector.on("collect", (reaction, user) => {
-        channel.send(`${user.displayName} >> You punk! 🖕`);
+        channel.send({
+          content: `@${user.displayName} >> You punk! 🖕`,
+          files: [{ attachment: "./assets/mikiko.jpg" }],
+        });
       });
     } catch (error) {
       logger.error("Scheduled Event -> error: {error}", {
@@ -233,7 +236,10 @@ GraduationResearchScheduleList.map((lecture) => {
       });
 
       collector.on("collect", (reaction, user) => {
-        channel.send(`${user.displayName} >> You punk! 🖕`);
+        channel.send({
+          content: `@${user.displayName} >> You punk! 🖕`,
+          files: [{ attachment: "./assets/mikiko.jpg" }],
+        });
       });
     } catch (error) {
       logger.error("Scheduled Event -> error: {error}", {
