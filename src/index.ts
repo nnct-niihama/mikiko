@@ -9,6 +9,17 @@ import {
 import dotenv from "dotenv";
 import schedule from "node-schedule";
 import { extractEnv } from "./extract-env";
+import { configure, getFileSink, getLogger } from "@logtape/logtape";
+
+await configure({
+  sinks: {
+    file: getFileSink("mikiko.log"),
+  },
+  filters: {},
+  loggers: [{ category: ["my-app"], lowestLevel: "info", sinks: ["file"] }],
+});
+
+const logger = getLogger(["my-app"]);
 
 dotenv.config();
 const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID } = extractEnv([
@@ -53,10 +64,19 @@ client.on(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  try {
+    logger.info("InteractionCreate -> userId: {userId}", {
+      userId: interaction.user.id,
+    });
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "ping") {
     await interaction.reply("Pong!");
+    }
+  } catch (error) {
+    logger.error("InteractionCreate -> error: {error}", {
+      error: error,
+    });
   }
 });
 
@@ -66,6 +86,9 @@ client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) {
     return;
   }
+  logger.info("MessageCreate -> userId: {userId}", {
+    userId: message.author.id,
+  });
 
   // 3%の確率で `おほ^〜` か `はえ^〜` を発言する
   if (Math.random() >= 0.03) {
@@ -80,6 +103,9 @@ client.on(Events.MessageCreate, async (message) => {
 
 // ディスコードに誰かが入ったら"{username}が入ったわよ〜!!"と発言する
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  logger.info("VoiceStateUpdate -> userId: {userId}", {
+    userId: newState.member?.id,
+  });
   // ミュートでも反応してしまうので無視用
   const statusChk =
     oldState.serverDeaf === newState.serverDeaf &&
@@ -156,6 +182,7 @@ const GraduationResearchScheduleList: Lecture[] = [
 GraduationResearchScheduleList.map((lecture) => {
   schedule.scheduleJob(lecture.name + "開始", lecture.startTime, async () => {
     try {
+      logger.info("Scheduled Event");
       const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
       const message = await channel.send(
         `@everyone\nみなさん卒研の時間ですわよ。おほほほほ！`
@@ -170,12 +197,16 @@ GraduationResearchScheduleList.map((lecture) => {
         channel.send(`${user.displayName} >> You punk! 🖕`);
       });
     } catch (error) {
+      logger.error("Scheduled Event -> error: {error}", {
+        error: error,
+      });
       console.error("メッセージ送信エラー:", error);
     }
   });
 
   schedule.scheduleJob(lecture.name + "終了", lecture.endTime, async () => {
     try {
+      logger.info("Scheduled Event");
       const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
       const message = await channel.send(
         `@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！`
@@ -190,6 +221,9 @@ GraduationResearchScheduleList.map((lecture) => {
         channel.send(`${user.displayName} >> You punk! 🖕`);
       });
     } catch (error) {
+      logger.error("Scheduled Event -> error: {error}", {
+        error: error,
+      });
       console.error("メッセージ送信エラー:", error);
     }
   });

@@ -18,6 +18,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@logtape/logtape": "^0.8.0",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.7",
     "node-schedule": "^2.1.1"
