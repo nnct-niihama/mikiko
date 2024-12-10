@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import schedule from "node-schedule";
 import { extractEnv } from "./extract-env";
 import { configure, getFileSink, getLogger } from "@logtape/logtape";
+import { Octokit } from "@octokit/core";
 
 await configure({
   sinks: {
@@ -22,11 +23,13 @@ await configure({
 const logger = getLogger(["my-app"]);
 
 dotenv.config();
-const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID } = extractEnv([
-  "DISCORD_BOT_TOKEN",
-  "DISCORD_CLIENT_ID",
-  "CHAT_CHANNEL_ID",
-]);
+const { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, CHAT_CHANNEL_ID, GITHUB_TOKEN } =
+  extractEnv([
+    "DISCORD_BOT_TOKEN",
+    "DISCORD_CLIENT_ID",
+    "CHAT_CHANNEL_ID",
+    "GITHUB_TOKEN",
+  ]);
 
 const commands = [
   {
@@ -228,9 +231,71 @@ GraduationResearchScheduleList.map((lecture) => {
       logger.error("Scheduled Event -> error: {error}", {
         error: error,
       });
-      console.error("メッセージ送信エラー:", error);
     }
   });
+});
+
+// issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら"早く実装して〜❤️"を送るようにする
+schedule.scheduleJob({ hour: 0, minute: 0 }, async () => {
+  try {
+    logger.info(
+      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)"
+    );
+    const octokit = new Octokit({ auth: GITHUB_TOKEN });
+
+    const response = await octokit.request("GET /repos/{owner}/{repo}/issues", {
+      owner: "nnct-niihama",
+      repo: "mikiko",
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+
+    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+    let messageText =
+      ">>> # おほほ〜、まだ実装されていない機能があるわよ〜❤️\n";
+    response.data.map((issue) => {
+      messageText = messageText + `- ${issue.title}\n`;
+    });
+    messageText = messageText + "早く実装して〜❤️";
+
+    channel.send(messageText);
+  } catch (error) {
+    logger.error("Scheduled Event -> error: {error}", {
+      error: error,
+    });
+  }
+});
+
+schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
+  try {
+    logger.info(
+      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)"
+    );
+    const octokit = new Octokit({ auth: GITHUB_TOKEN });
+
+    const response = await octokit.request("GET /repos/{owner}/{repo}/issues", {
+      owner: "nnct-niihama",
+      repo: "mikiko",
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+
+    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+    let messageText =
+      ">>> # おほほ〜、まだ実装されていない機能があるわよ〜❤️\n";
+    response.data.map((issue) => {
+      messageText = messageText + `- ${issue.title}\n`;
+    });
+    messageText = messageText + "早く実装して〜❤️";
+
+    channel.send(messageText);
+  } catch (error) {
+    logger.error("Scheduled Event -> error: {error}", {
+      error: error,
+    });
+  }
 });
 
 client.login(DISCORD_BOT_TOKEN);
