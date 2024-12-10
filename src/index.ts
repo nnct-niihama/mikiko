@@ -59,6 +59,11 @@ interface GitHubWebhookPayload {
         login: string;
       }
     ];
+    labels: [
+      {
+        name: string;
+      }
+    ];
   };
 }
 
@@ -89,6 +94,14 @@ const isGitHubWebhookPayload = (
         typeof assignee === "object" &&
         "login" in assignee &&
         typeof assignee.login === "string"
+    ) &&
+    "labels" in value.issue &&
+    Array.isArray(value.issue.labels) &&
+    value.issue.labels.every(
+      (label) =>
+        typeof label === "object" &&
+        "name" in label &&
+        typeof label.name === "string"
     )
   );
 };
@@ -111,8 +124,15 @@ app.post("/webhook", async (req, res) => {
       return;
     }
 
+    // メンテナンス用タグが付いている場合は機能ではないので処理終了
+    if (
+      reqBody.issue.labels.map((label) => label.name).includes("maintenance")
+    ) {
+      return;
+    }
+
     const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-    let message = `>>> # 新しい機能が実装されたわよ〜❤️\n[${reqBody.issue.title}](${reqBody.issue.url})\n美樹子感激✨`;
+    let message = `>>> # 新しい機能が実装されたわよ〜❤️\n\n***\n${reqBody.issue.title}\n***\n\n美樹子感激✨`;
     if (reqBody != undefined && reqBody.issue.assignees.length > 0) {
       const devMember = reqBody.issue.assignees
         .map((user) => user.login)
