@@ -68,10 +68,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     logger.info("InteractionCreate -> userId: {userId}", {
       userId: interaction.user.id,
     });
-  if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "ping") {
-    await interaction.reply("Pong!");
+    if (interaction.commandName === "ping") {
+      await interaction.reply("Pong!");
     }
   } catch (error) {
     logger.error("InteractionCreate -> error: {error}", {
@@ -213,7 +213,11 @@ GraduationResearchScheduleList.map((lecture) => {
       );
 
       const collector = message.createReactionCollector({
-        filter: (reaction, user) => reaction.emoji.name === "🖕" && !user.bot,
+        filter: (reaction, user) =>
+          (reaction.emoji.name === "🖕" ||
+            reaction.emoji.name === "👎" ||
+            reaction.emoji.name === "💩") &&
+          !user.bot,
         time: 600_000,
       });
 
