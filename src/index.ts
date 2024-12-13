@@ -418,6 +418,73 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
   }
 });
 
+
+// Sakura Internet 受信時の型
+interface SakuraServerResponse {
+  isFrequentUrination: boolean;
+  todayToiletCount: number;
+}
+// Sakura Internet Responseの型ガード関数
+const isSakuraServerResponse = (
+  value: unknown
+): value is SakuraServerResponse => {
+  // 値がオブジェクトなのか？
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  // 必要なプロパティが存在し、かつ、正しい型なのか？
+  return (
+    "isFrequentUrination" in value &&
+    typeof value.isFrequentUrination === "boolean" &&
+    "todayToiletCount" in value &&
+    typeof value.todayToiletCount === "number"
+  );
+};
+
+const sakura_server_addr = "163.43.144.159:3000"
+schedule.scheduleJob({hour: 21, minute: 0}, async () => {
+  try {
+    logger.info("Toilet Health Info")
+    const response = await fetch(sakura_server_addr + "/cds");
+    const resBody = response.body as unknown;
+    // 型チェック
+    if (!isSakuraServerResponse(resBody)) {
+      throw new Error(
+        "The webhook request type is different from the expected type"
+      );
+    }
+    
+    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+    await channel.send(`てらおさんのトイレ情報\n本日のトイレ回数: ${resBody.todayToiletCount}回\n頻尿判定: ${resBody.isFrequentUrination ? "頻尿" : "頻尿ではありません"}`);
+  } catch (error) {
+    logger.error("Scheduled Event -> error: {error}", {
+      error: error
+    })
+  }
+})
+schedule.scheduleJob({hour: 9, minute: 0}, async () => {
+  try {
+    logger.info("Toilet Health Info")
+    const response = await fetch(sakura_server_addr + "/cds");
+    const resBody = response.body as unknown;
+    // 型チェック
+    if (!isSakuraServerResponse(resBody)) {
+      throw new Error(
+        "The webhook request type is different from the expected type"
+      );
+    }
+    
+    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+    await channel.send(`てらおさんのトイレ情報\n本日のトイレ回数: ${resBody.todayToiletCount}回\n頻尿判定: ${resBody.isFrequentUrination ? "頻尿" : "頻尿ではありません"}`);
+  } catch (error) {
+    logger.error("Scheduled Event -> error: {error}", {
+      error: error
+    })
+  }
+})
+
+
 // サーバー起動
 app.listen(3000, () => {
   logger.info("Server is listening on port 3000");
