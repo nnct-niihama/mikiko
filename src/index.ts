@@ -57,19 +57,19 @@ interface GitHubWebhookPayload {
     assignees: [
       {
         login: string;
-      }
+      },
     ];
     labels: [
       {
         name: string;
-      }
+      },
     ];
   };
 }
 
 // GitHub Webhook ペイロードの型ガード関数
 const isGitHubWebhookPayload = (
-  value: unknown
+  value: unknown,
 ): value is GitHubWebhookPayload => {
   // 値がオブジェクトなのか？
   if (!value || typeof value !== "object") {
@@ -93,7 +93,7 @@ const isGitHubWebhookPayload = (
       (assignee) =>
         typeof assignee === "object" &&
         "login" in assignee &&
-        typeof assignee.login === "string"
+        typeof assignee.login === "string",
     ) &&
     "labels" in value.issue &&
     Array.isArray(value.issue.labels) &&
@@ -101,7 +101,7 @@ const isGitHubWebhookPayload = (
       (label) =>
         typeof label === "object" &&
         "name" in label &&
-        typeof label.name === "string"
+        typeof label.name === "string",
     )
   );
 };
@@ -115,7 +115,7 @@ app.post("/webhook", async (req, res) => {
     // 型チェック
     if (!isGitHubWebhookPayload(reqBody)) {
       throw new Error(
-        "The webhook request type is different from the expected type"
+        "The webhook request type is different from the expected type",
       );
     }
 
@@ -145,8 +145,10 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-client.on(Events.ClientReady, () => {
+client.on(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user?.tag}!\n\n\n`);
+  const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
+  await channel.send("最終安全装置解除! discordbot美号機、リフトオフ！");
 });
 
 // 卒研時間報告機能に対して🖕を立ててくる不届きものがいるので粛清するようにする
@@ -201,7 +203,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
                 files.filter((file) => {
                   const filePath = path.join("./assets", file);
                   return !file.startsWith(".") && fs.statSync(filePath).isFile;
-                })[fileNumber]
+                })[fileNumber],
               ),
             },
           ],
@@ -256,12 +258,12 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   if ((statusChk == true || oldState.serverDeaf == null) && newState.channel) {
     //チャンネルに入ってきたときの処理
     (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      `${newState.member?.displayName}が${newState.channel.name}チャンネルに入ったわよ〜!!`
+      `${newState.member?.displayName}が${newState.channel.name}チャンネルに入ったわよ〜!!`,
     );
   } else if (statusChk && oldState.channel) {
     // チャンネルから出たときの処理
     (client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel).send(
-      `${newState.member?.displayName}が${oldState.channel?.name}チャンネルから抜けたわよ〜!!`
+      `${newState.member?.displayName}が${oldState.channel?.name}チャンネルから抜けたわよ〜!!`,
     );
   }
 });
@@ -335,7 +337,7 @@ GraduationResearchScheduleList.map((lecture) => {
       logger.info("Scheduled Event");
       const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
       await channel.send(
-        `@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！`
+        `@everyone\nみなさん卒研ご苦労様ですわよ。おほほほほ！`,
       );
     } catch (error) {
       logger.error("Scheduled Event -> error: {error}", {
@@ -349,7 +351,7 @@ GraduationResearchScheduleList.map((lecture) => {
 schedule.scheduleJob({ hour: 0, minute: 0 }, async () => {
   try {
     logger.info(
-      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)"
+      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)",
     );
     const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -367,7 +369,9 @@ schedule.scheduleJob({ hour: 0, minute: 0 }, async () => {
     response.data
       .filter(
         (issue) =>
-          !issue.labels.map((label) => label.toString()).includes("maintenance")
+          !issue.labels
+            .map((label) => label.toString())
+            .includes("maintenance"),
       )
       .map((issue) => {
         messageText = messageText + `- ${issue.title}\n`;
@@ -385,7 +389,7 @@ schedule.scheduleJob({ hour: 0, minute: 0 }, async () => {
 schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
   try {
     logger.info(
-      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)"
+      "Scheduled Event (issueベースで開発をしているので昼(12:00)と夜(00:00)にまだ残っているissueがあったら 早く実装して〜❤️ を送るようにする)",
     );
     const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -403,7 +407,9 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
     response.data
       .filter(
         (issue) =>
-          !issue.labels.map((label) => label.toString()).includes("maintenance")
+          !issue.labels
+            .map((label) => label.toString())
+            .includes("maintenance"),
       )
       .map((issue) => {
         messageText = messageText + `- ${issue.title}\n`;
@@ -417,73 +423,6 @@ schedule.scheduleJob({ hour: 12, minute: 0 }, async () => {
     });
   }
 });
-
-
-// Sakura Internet 受信時の型
-interface SakuraServerResponse {
-  isFrequentUrination: boolean;
-  todayToiletCount: number;
-}
-// Sakura Internet Responseの型ガード関数
-const isSakuraServerResponse = (
-  value: unknown
-): value is SakuraServerResponse => {
-  // 値がオブジェクトなのか？
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  // 必要なプロパティが存在し、かつ、正しい型なのか？
-  return (
-    "isFrequentUrination" in value &&
-    typeof value.isFrequentUrination === "boolean" &&
-    "todayToiletCount" in value &&
-    typeof value.todayToiletCount === "number"
-  );
-};
-
-const sakura_server_addr = "163.43.144.159:3000"
-schedule.scheduleJob({hour: 21, minute: 0}, async () => {
-  try {
-    logger.info("Toilet Health Info")
-    const response = await fetch(sakura_server_addr + "/cds");
-    const resBody = response.body as unknown;
-    // 型チェック
-    if (!isSakuraServerResponse(resBody)) {
-      throw new Error(
-        "The webhook request type is different from the expected type"
-      );
-    }
-    
-    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-    await channel.send(`てらおさんのトイレ情報\n本日のトイレ回数: ${resBody.todayToiletCount}回\n頻尿判定: ${resBody.isFrequentUrination ? "頻尿" : "頻尿ではありません"}`);
-  } catch (error) {
-    logger.error("Scheduled Event -> error: {error}", {
-      error: error
-    })
-  }
-})
-schedule.scheduleJob({hour: 9, minute: 0}, async () => {
-  try {
-    logger.info("Toilet Health Info")
-    const response = await fetch(sakura_server_addr + "/cds");
-    const resBody = response.body as unknown;
-    // 型チェック
-    if (!isSakuraServerResponse(resBody)) {
-      throw new Error(
-        "The webhook request type is different from the expected type"
-      );
-    }
-    
-    const channel = client.channels.cache.get(CHAT_CHANNEL_ID) as TextChannel;
-    await channel.send(`てらおさんのトイレ情報\n本日のトイレ回数: ${resBody.todayToiletCount}回\n頻尿判定: ${resBody.isFrequentUrination ? "頻尿" : "頻尿ではありません"}`);
-  } catch (error) {
-    logger.error("Scheduled Event -> error: {error}", {
-      error: error
-    })
-  }
-})
-
 
 // サーバー起動
 app.listen(3000, () => {
